@@ -20,10 +20,10 @@
 		'author' : {
 			'en' : '@iihoshi'
 		},
-		"version" : "1.0.0",
+		"version" : "1.1.0",
 		'file' : 'eventcheck.js',
 		'language' : ['de','en','es','ja','ko','pt','zh-CN'],
-		"last_update" : "2012/11/22",
+		"last_update" : "2012/12/06",
 		'update_timezone' : '9',
 		'jnVersion' : '4.0.1.0 -',
 		'description' : {
@@ -33,25 +33,41 @@
 	};
 	// プラグイン情報ここまで
 
-	// if (jn.temp.pluginLoaded)
-	//	console.log('eventcheck.js: janet.pluginLoad() has already been called!');
+//	if (jn.temp.pluginLoaded)
+//		console.log('eventcheck.js: janet.pluginLoad() has already been called!');
 	if (jn.temp.initialized)
 		console.log('eventcheck.js: janet.onInitializeDone() has already been called!');
 
-	// 初期化処理が開始時
+	/* プラグインが利用するものではないため、コメントアウト
+		http://jbbs.livedoor.jp/bbs/read.cgi/internet/8173/1340690924/853
+	// 初期化処理の開始時
 	// janet.onInitialize();
 	var origin_onInitialize = jn.onInitialize;
 	jn.onInitialize = function () {
 		origin_onInitialize && origin_onInitialize();
-		console.log('初期化処理が開始時 janet.onInitialize();');
+		console.log('初期化処理の開始時 janet.onInitialize();');
 	};
+	*/
 
-	// 初期化処理が終了時
+	// 初期化処理の終了時
 	// janet.onInitializeDone();
 	var origin_onInitializeDone = jn.onInitializeDone;
 	jn.onInitializeDone = function () {
 		origin_onInitializeDone && origin_onInitializeDone();
-		console.log('初期化処理が終了時 janet.onInitializeDone();');
+		console.log('初期化処理の終了時 janet.onInitializeDone();');
+
+		// フォントサイズ変更時 (timelineController)
+		// janet.timelineController.onChangeFontSize();
+		if (_Janetter_Window_Type == 'main') {
+			jn.get$Timelines().each(function(){
+				// 初期化処理終了後に追加されたTLにはいつ登録すれば良いんだ??
+				var origin_tlctl_onChangeFontSize = this.controller.onChangeFontSize;
+				this.controller.onChangeFontSize = function () {
+					origin_tlctl_onChangeFontSize && origin_tlctl_onChangeFontSize();
+					console.log('フォントサイズ変更時 janet.timelineController.onChangeFontSize();');
+				};
+			});
+		}
 	};
 
 	// 設定を取得した時
@@ -122,9 +138,11 @@
 	// janet.onTweetBoxShowBegin(expanded);
 	var origin_onTweetBoxShowBegin = jn.onTweetBoxShowBegin;
 	jn.onTweetBoxShowBegin = function (expanded) {
-		origin_onTweetBoxShowBegin && origin_onTweetBoxShowBegin(expanded);
+		var stop = true;
+		if (origin_onTweetBoxShowBegin)
+			stop = origin_onTweetBoxShowBegin(expanded);
 		console.log('ツイート欄を開こうとした時 janet.onTweetBoxShowBegin(expanded);');
-		return true; // コレがないと開かない
+		return stop;
 	};
 
 	// ツイート欄を開いた時
@@ -181,7 +199,9 @@
 	// 4.0.0.0b2で新規に追加。trueと判定される値を返却するとその後の処理を行わない
 	var origin_onReceiveNewStatusesBefore = jn.onReceiveNewStatusesBefore;
 	jn.onReceiveNewStatusesBefore = function (tweets) {
-		var stop = (origin_onReceiveNewStatusesBefore && origin_onReceiveNewStatusesBefore(tweets));
+		var stop = false;
+		if (origin_onReceiveNewStatusesBefore)
+			stop = origin_onReceiveNewStatusesBefore(tweets);
 		console.log('新着ツイート(画面表示前) janet.onReceiveNewStatusesBefore(tweets);');
 		return stop;
 	};
@@ -200,7 +220,9 @@
 	// 4.0.0.0b2で新規に追加。trueと判定される値を返却するとその後の処理を行わない
 	var origin_onReceiveNewTweetsBefore = jn.onReceiveNewTweetsBefore;
 	jn.onReceiveNewTweetsBefore = function (tweets) {
-		var stop = (origin_onReceiveNewTweetsBefore && origin_onReceiveNewTweetsBefore(tweets));
+		var stop = false;
+		if (origin_onReceiveNewTweetsBefore)
+			stop = origin_onReceiveNewTweetsBefore(tweets);
 		console.log('新着ツイート通知(画面表示前) janet.onReceiveNewTweetsBefore(tweets);');
 		return stop;
 	};
@@ -219,7 +241,9 @@
 	// 4.0.0.0b2で新規に追加。trueと判定される値を返却するとその後の処理を行わない
 	var origin_onReceiveNewEventBefore = jn.onReceiveNewEventBefore;
 	jn.onReceiveNewEventBefore = function (data) {
-		var stop = (origin_onReceiveNewEventBefore && origin_onReceiveNewEventBefore(data));
+		var stop = false;
+		if (origin_onReceiveNewEventBefore)
+			stop = origin_onReceiveNewEventBefore(data);
 		console.log('イベント通知(画面表示前) janet.onReceiveNewEventBefore(data);');
 		return stop;
 	};
@@ -352,6 +376,16 @@
 		origin_onContextMemuTrendsBuildStarted && origin_onContextMemuTrendsBuildStarted();
 		console.log('トレンドメニュー janet.onContextMemuTrendsBuildStarted();');
 	};
+
+	// フォントサイズ変更時 (tweeteditor)
+	// janet.editor.onChangeFontSize();
+	if (jn.editor) {
+		var origin_editor_onChangeFontSize = jn.editor.onChangeFontSize;
+		jn.editor.onChangeFontSize = function () {
+			origin_editor_onChangeFontSize && origin_editor_onChangeFontSize();
+			console.log('フォントサイズ変更時 janet.editor.onChangeFontSize();');
+		};
+	}
 
 	// console.log('eventcheck.js: End.');
 
