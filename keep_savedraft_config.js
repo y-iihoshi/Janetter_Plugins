@@ -18,10 +18,10 @@
 		'author' : {
 			'en' : '@iihoshi'
 		},
-		"version" : "1.0.1",
+		"version" : "1.1.0",
 		'file' : 'keep_savedraft_config.js',
 		'language' : ['de','en','es','ja','ko','pt','zh-CN'],
-		"last_update" : "2012/11/18",
+		"last_update" : "2013/1/20",
 		'update_timezone' : '9',
 		'jnVersion' : '4.0.1.0 -',
 		'description' : {
@@ -30,7 +30,7 @@
 		},
 		'updateinfo' : 'http://www.colorless-sight.jp/archives/JanetterPluginUpdateInfo.txt'
 	};
-	// プラグイン情報ここまで
+	// プラグイン情報 ここまで
 
 	var _ksdcClass = function(){};
 	_ksdcClass.prototype = {
@@ -116,7 +116,7 @@
 	var _ksdc = new _ksdcClass();
 
 	if (jn.temp.initialized) {
-		// The original onInitializeDone() have already been called!
+		// The original onInitializeDone() has already been called!
 		ksdcInit();
 	}
 	else {
@@ -139,22 +139,13 @@
 		// プラグイン読み込み時は既に onGetMessages() 実行済みのため、ここでの呼び出しが必要
 		// (See: http://jbbs.livedoor.jp/bbs/read.cgi/internet/8173/1291895275/661)
 		addTranslateData(_ksdc.msg);
+
 		// 翻訳情報取得時の前処理
 		var orig_onGetMessages = jn.onGetMessages;
 		jn.onGetMessages = function(success, data) {
 			addTranslateData(_ksdc.msg);
-			orig_onGetMessages && orig_onGetMessages(success, data);
+			orig_onGetMessages && orig_onGetMessages.apply(this, arguments);
 		};
-		// 翻訳情報取得時の後処理
-		// 言語ごとにCSSを変える（configCSS.format()などでjn.conf.langを反映させる）場合は必要
-		/*
-		var orig_onGetMessagesDone = jn.onGetMessagesDone;
-		jn.onGetMessagesDone = function(success, data) {
-			orig_onGetMessagesDone && orig_onGetMessagesDone(success, data);
-			$('style.keepsavedraftconfig').remove();
-			$('body').append($(_ksdc.configCSS));
-		};
-		*/
 
 		// ウィンドウ別の初期化処理
 		switch (_Janetter_Window_Type) {
@@ -204,9 +195,11 @@
 					switch (act) {
 						// 下書き保存方法
 						case 'saveDraft':
-							var elemCheck = elem.val();
-							jn.conf.ksdc_save_draft = elemCheck;
-							syncConfig(_Janetter_Window_Type, false, 'ksdc_save_draft', elemCheck, false, '', '', '');
+							jn.conf.ksdc_save_draft = elem.val();
+							syncConfig({
+								configName: 'ksdc_save_draft',
+								configData: jn.conf.ksdc_save_draft
+							});
 							break;
 						// 既存の jn.configDialog.action を呼び出す
 						default:
@@ -225,73 +218,150 @@
 		console.log('keep_savedraft_config.js has been initialized.');
 	}
 
-	// メッセージの翻訳データなど追加 (@ginlime)
-	function addTranslateData(msg) {
+	// メッセージの翻訳データを追加 (@ginlime)
+	function addTranslateData(msg, additionalProc){
 		var msgData = msg[jn.conf.lang];
-		if (msgData == undefined)
+		if(msgData == undefined)
 			msgData = msg['en'];
+		additionalProc && additionalProc(msgData);
 		assignTo(jn.msg, msgData);
+	};
+
+	// 全置換 (@ginlime)
+	String.prototype.replaceAll = function(org, dest){
+		return this.split(org).join(dest);
 	}
 
-	// 設定の同期を取る (@ginlime)
-	var isSrcProfileWindow = false;
-	syncConfig = function(srcWindow, isSrcProfile, configName, configData, configIsBoole, funcExecOnMain, funcExecOnProf, funcExecOnConf){
-		var tempConfigData = configData;
-		if(configIsBoole){
-			if(configData=='true')
-				tempConfigData = true;
-			else
-				tempConfigData = false;
+	// 指定文字数のランダム文字列を生成 (@ginlime)
+	randomStr = function(len, additional){
+		var srcAry = [],
+		addLen = (additional) ? additional.length : 0,
+		aryLen,
+		resStr = '';
+		for(var i = 0; i < 10; i++){
+			srcAry.push(String.fromCharCode('0'.charCodeAt() + i));
 		}
+		for(var i = 0; i < 26; i++){
+			srcAry.push(String.fromCharCode('A'.charCodeAt() + i));
+		}
+		for(var i = 0; i < 26; i++){
+			srcAry.push(String.fromCharCode('a'.charCodeAt() + i));
+		}
+		if(additional){
+			for(var i = 0; i < addLen; i++){
+				var tmpChar = additional.charAt(i);
+				if(tmpChar!="'" && tmpChar!='"')	// クォーテーション類は使用不可
+					srcAry.push(tmpChar);
+			}
+		}
+		aryLen = srcAry.length;
+		for(var i = 0; i < len; i++){
+			resStr += srcAry[Math.floor(Math.random()*aryLen)];
+		}
+		return resStr;
+	}
+
+	// 設定値の同期を取る (@ginlime)
+	var isSrcProfileWindow = {};
+	syncConfig = function(srcWindow, isSrcProfile, configName, configData, configIsBoole, funcExecOnMain, funcExecOnProf, funcExecOnConf, funcExecOnNotice, dontSave, profTrack){
+		var dataIsEmpty = (configData==undefined),
+			lackSrcProfile = (srcWindow=='profile' && isSrcProfile==undefined);
+		if(typeof arguments[0]=='object'){
+			isSrcProfile = arguments[0].isSrcProfile || (_Janetter_Window_Type=='profile');
+			configName = arguments[0].configName || '';
+			configData = arguments[0].configData;
+			dataIsEmpty = (arguments[0].configData==undefined);
+			configIsBoole = arguments[0].configIsBoole || (typeof configData == 'boolean');
+			funcExecOnMain = arguments[0].funcExecOnMain || '';
+			funcExecOnProf = arguments[0].funcExecOnProf || '';
+			funcExecOnConf = arguments[0].funcExecOnConf || '';
+			funcExecOnNotice = arguments[0].funcExecOnNotice || '';
+			dontSave = arguments[0].dontSave || false;
+			profTrack = '';
+			srcWindow = arguments[0].srcWindow || _Janetter_Window_Type;
+		}
+		if(!srcWindow){
+			console.warn('syncConfig：srcWindow が不足しています。');
+			return false;
+		}
+		if(!configName){
+			console.warn('syncConfig：configName が不足しています。');
+			return false;
+		}
+		if(dataIsEmpty){
+			console.warn('syncConfig：configData が不足しています。');
+			return false;
+		}
+		if(lackSrcProfile){
+			console.warn('syncConfig：isSrcProfile が不足しています。');
+			return false;
+		}
+		isSrcProfile = (typeof isSrcProfile=='string') ?
+							(isSrcProfile=='true') ?
+								true :
+								false :
+							isSrcProfile;
+		configIsBoole = (typeof configIsBoole=='string') ?
+							(configIsBoole=='true') ?
+								true :
+								false :
+							configIsBoole;
+		dontSave = (typeof dontSave=='string') ?
+							(dontSave=='true') ?
+								true :
+								false :
+							dontSave;
+		var configDataSave = configData;
+		configDataSave = (configIsBoole && typeof configDataSave=='string') ?
+							(configDataSave=='true') ?
+								true :
+								false :
+							configDataSave;
+		if(typeof configDataSave=='string'){
+			if((srcWindow=='profile'&&isSrcProfile)||(srcWindow!='profile'&&srcWindow==_Janetter_Window_Type)){
+				configData = configData.replaceAll('&','&amp;').replaceAll('"','&quot;');
+			} else {
+				configDataSave = configDataSave.replaceAll('&quot;','"').replaceAll('&amp;','&');
+			}
+		}
+		jn.conf[configName] = configDataSave;
 		switch(_Janetter_Window_Type){
 			case 'main':
-				jn.conf[configName] = tempConfigData;
-				jn.setConfig(jn.conf);	// 引き渡し時に保存を行うのは main のみ
-				if(srcWindow == 'main' || srcWindow == 'profile'){	// switch を多重で使うとネストが深くなるので
-					// profJS と confJS に引き渡す（※profJS は複数存在しうる）
-					jn.webViewAction('profJS', {cmd:'syncConfig("'+srcWindow+'",'+false+',"'+configName+'","'+configData+'",'+configIsBoole+',"","'+funcExecOnProf+'","'+funcExecOnConf+'")'});
-					jn.webViewAction('confJS', {cmd:'syncConfig("'+srcWindow+'",'+false+',"'+configName+'","'+configData+'",'+configIsBoole+',"","'+funcExecOnProf+'","'+funcExecOnConf+'")'});
-					if(srcWindow == 'profile' && funcExecOnMain)	// 自身で実行した場合は行わない
-						eval(funcExecOnMain+'()');
-				} else if(srcWindow == 'config') {
-					// profJS に引き渡すのみ
-					jn.webViewAction('profJS', {cmd:'syncConfig("config",'+false+',"'+configName+'","'+configData+'",'+configIsBoole+',"","'+funcExecOnProf+'","'+funcExecOnConf+'")'});
-					if(funcExecOnMain)
-						eval(funcExecOnMain+'()');
-				}
+				if(!dontSave)
+					jn.setConfig(jn.conf);
+				jn.webViewAction('profJS', {cmd:'syncConfig("'+srcWindow+'",'+false+',"'+configName+'","'+configData+'",'+configIsBoole+',"","'+funcExecOnProf+'","","",'+false+',"'+profTrack+'")'});
+				if(srcWindow!='config')
+					jn.webViewAction('confJS', {cmd:'syncConfig("'+srcWindow+'",'+false+',"'+configName+'","'+configData+'",'+configIsBoole+',"","","'+funcExecOnConf+'","",'+false+',"'+profTrack+'")'});
+				if(srcWindow!='notice')
+					jn.webViewAction('noticeJS', {cmd:'syncConfig("'+srcWindow+'",'+false+',"'+configName+'","'+configData+'",'+configIsBoole+',"","","","'+funcExecOnNotice+'",'+false+',"'+profTrack+'")'});
+				if(srcWindow!='main' && funcExecOnMain)
+					eval(funcExecOnMain+'()');
 				break;
 			case 'profile':
-				if(srcWindow == 'main' || srcWindow == 'config'){	// 終端なので他には引き渡さない
-					jn.conf[configName] = tempConfigData;
-					if(funcExecOnProf)
-						eval(funcExecOnProf+'()');
-				} else if(srcWindow == 'profile') {
-					if(isSrcProfile){	// 自身が発信元の場合の初回実行
-						isSrcProfileWindow = true;
-						jn.webViewAction('mainJS', {cmd:'syncConfig("profile",'+false+',"'+configName+'","'+configData+'",'+configIsBoole+',"'+funcExecOnMain+'","'+funcExecOnProf+'","'+funcExecOnConf+'")'});
-					} else {
-						if(isSrcProfileWindow)	// 自身が発信元の場合の戻りは、フラグを元に戻して終わり
-							isSrcProfileWindow = false;
-						else {
-							jn.conf[configName] = tempConfigData;
-							if(funcExecOnProf)
-								eval(funcExecOnProf+'()');
-						}
-					}
+				if(srcWindow=='profile' && isSrcProfile){
+					var trackStr = randomStr(10);
+					isSrcProfileWindow[trackStr] = true;
+					jn.webViewAction('mainJS', {cmd:'syncConfig("profile",'+false+',"'+configName+'","'+configData+'",'+configIsBoole+',"'+funcExecOnMain+'","'+funcExecOnProf+'","'+funcExecOnConf+'","'+funcExecOnNotice+'",'+dontSave+',"'+trackStr+'")'});
 				}
+				if((srcWindow!='profile' || (profTrack!='' && !isSrcProfileWindow[profTrack])) && funcExecOnProf)
+					eval(funcExecOnProf+'()');
+				if(!isSrcProfile && isSrcProfileWindow[profTrack])
+					isSrcProfileWindow[profTrack] = false;
 				break;
 			case 'config':
-				if(srcWindow == 'main' || srcWindow == 'profile'){	// 終端なので他には引き渡さない
-					jn.conf[configName] = tempConfigData;
-					if(funcExecOnConf)
-						eval(funcExecOnConf+'()');
-				} else if(srcWindow == 'config') {	// メイン画面からは戻ってこない
-					jn.webViewAction('mainJS', {cmd:'syncConfig("config",'+false+',"'+configName+'","'+configData+'",'+configIsBoole+',"'+funcExecOnMain+'","'+funcExecOnProf+'","")'});
-				}
+				if(srcWindow == 'config')
+					jn.webViewAction('mainJS', {cmd:'syncConfig("config",'+false+',"'+configName+'","'+configData+'",'+configIsBoole+',"'+funcExecOnMain+'","'+funcExecOnProf+'","","'+funcExecOnNotice+'",'+dontSave+',"")'});
+				else if(funcExecOnConf)
+					eval(funcExecOnConf+'()');
 				break;
-			default:
+			case 'notice':
+				if(srcWindow == 'notice')
+					jn.webViewAction('mainJS', {cmd:'syncConfig("notice",'+false+',"'+configName+'","'+configData+'",'+configIsBoole+',"'+funcExecOnMain+'","'+funcExecOnProf+'","'+funcExecOnConf+'","",'+dontSave+',"")'});
+				else if(funcExecOnNotice)
+					eval(funcExecOnNotice+'()');
 				break;
 		}
+		return true;
 	};
 
 })(jQuery, janet);
