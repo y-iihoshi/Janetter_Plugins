@@ -17,10 +17,10 @@
 		'author' : {
 			'en' : '@iihoshi'
 		},
-		'version' : '1.0.0',
+		'version' : '1.0.1',
 		'file' : 'on_tl_title_click.js',
 		'language' : ['en','ja'],
-		'last_update' : '2013/3/22',
+		'last_update' : '2013/3/23',
 		'update_timezone' : '9',
 		'jnVersion' : 'Win 4.2.2.0 -, Mac 4.0.1 -',
 		'description' : {
@@ -34,112 +34,55 @@
 	var _Resource = function(){};
 	_Resource.prototype = {
 		// 翻訳情報
-		// jn.msg.jumpLatestTweet や jn.msg.jumpFirstUnread を使わないのは
-		// last と latest の違いを en/ja 以外で簡潔に表現できる自信が無いから
+		// jn.msg.jumpLatestTweet や jn.msg.jumpFirstUnread を使わないのは、
+		// last と latest の違いを en/ja 以外で簡潔に表現できる自信が無いから。
 		'msg': {
 			'en': {
-				'ottcMenu': "On a timeline title click:",
+				'ottcMenu': "When you click the timeline title:",
 				'ottcNone': "Do nothing",
 				'ottcLast': "Jump to Last Tweet",
 				'ottcLatest': "Jump to Latest Tweet",
 				'ottcUnread': "Jump to First Unread",
 				'ottcNoneTip': "Default for Windows/Mac version",
 				'ottcLastTip': "Just like iOS/Android version",
-				'ottcLatestTip': "Keyboard shortcut: .",
-				'ottcUnreadTip': "Keyboard shortcut: ,"
+				'ottcLatestTip': 'Same as the keyboard shortcut "."',
+				'ottcUnreadTip': 'Same as the keyboard shortcut ","'
 			},
 			'ja': {
-				'ottcMenu': "タイムラインタイトルのクリック時の動作:",
+				'ottcMenu': "タイムラインタイトルをクリックしたときの動作:",
 				'ottcNone': "何もしない",
 				'ottcLast': "取得済み最新ツイートへ移動",
 				'ottcLatest': "最新のツイートへ移動",
 				'ottcUnread': "最初の未読へ移動",
 				'ottcNoneTip': "Windows/Mac 版の既定動作",
 				'ottcLastTip': "iOS/Android 版と同様の動作",
-				'ottcLatestTip': "キーボード ショートカット: .",
-				'ottcUnreadTip': "キーボード ショートカット: ,"
+				'ottcLatestTip': 'キーボード ショートカット "." と同一',
+				'ottcUnreadTip': 'キーボード ショートカット "," と同一'
 			}
 		},
 		// 設定画面用の HTML
 		'configHTML': '\
 <div class="boxottc">\
-<span class="menu01" transtext="ottcMenu"></span>\
-<div class="bevel">\
-<input class="radio-none" type="radio" name="on_tl_title_click" value="none">\
-<span class="check text-none" transtext="ottcNone" transtitle="ottcNoneTip"></span>\
-<input class="radio-last" type="radio" name="on_tl_title_click" value="last">\
-<span class="check text-last" transtext="ottcLast" transtitle="ottcLastTip"></span>\
-<input class="radio-latest" type="radio" name="on_tl_title_click" value="latest">\
-<span class="check text-latest" transtext="ottcLatest" transtitle="ottcLatestTip"></span>\
-<input class="radio-unread" type="radio" name="on_tl_title_click" value="unread">\
-<span class="check text-unread" transtext="ottcUnread" transtitle="ottcUnreadTip"></span>\
+<span class="conf-menu" transtext="ottcMenu"></span>\
+<select class="comb01" action="on_tl_title_click" size="1">\
+<option value="none" transtext="ottcNone" transtitle="ottcNoneTip"></option>\
+<option value="last" transtext="ottcLast" transtitle="ottcLastTip"></option>\
+<option value="latest" transtext="ottcLatest" transtitle="ottcLatestTip"></option>\
+<option value="unread" transtext="ottcUnread" transtitle="ottcUnreadTip"></option>\
+</select>\
 </div>\
-</div>\
+<hr>\
 ',
 		// 設定画面用の CSS
 		'configCSS': '\
 <style type="text/css" class="tltitleclick">\
 <!--\
 .conf-main > .tab06 > .boxottc {\
-	height: %1;\
-}\
-.conf-main > .tab06 > .boxottc .menu01 {\
-	top: 0;\
-}\
-.conf-main > .tab06 > .boxottc .bevel {\
-	top: %2;\
-	left: 200px;\
-	width: 260px;\
-	height: 130px;\
-}\
-.conf-main > .tab06 > .boxottc .radio-none {\
-	position: absolute;\
-	top: 12px;\
-	left: 12px;\
-}\
-.conf-main > .tab06 > .boxottc .text-none {\
-	position: absolute;\
-	top: 10px;\
-	left: 32px;\
-}\
-.conf-main > .tab06 > .boxottc .radio-last {\
-	position: absolute;\
-	top: 42px;\
-	left: 12px;\
-}\
-.conf-main > .tab06 > .boxottc .text-last {\
-	position: absolute;\
-	top: 40px;\
-	left: 32px;\
-}\
-.conf-main > .tab06 > .boxottc .radio-latest {\
-	position: absolute;\
-	top: 72px;\
-	left: 12px;\
-}\
-.conf-main > .tab06 > .boxottc .text-latest {\
-	position: absolute;\
-	top: 70px;\
-	left: 32px;\
-}\
-.conf-main > .tab06 > .boxottc .radio-unread {\
-	position: absolute;\
-	top: 102px;\
-	left: 12px;\
-}\
-.conf-main > .tab06 > .boxottc .text-unread {\
-	position: absolute;\
-	top: 100px;\
-	left: 32px;\
+	height: 54px;\
 }\
 //-->\
 </style>\
-',
-		// 設定画面用 CSS のうち言語依存部分
-		'configCSSdepLang': {
-			'en': { 'boxHeight': '130px', 'bevelTop': '0'    },
-			'ja': { 'boxHeight': '154px', 'bevelTop': '24px' }
-		}
+'
 	};
 
 	var _rsrc = new _Resource();
@@ -167,8 +110,8 @@
 			var orig_cfgDlg_buildAdvanced = jn.configDialog.buildAdvanced;
 			jn.configDialog.buildAdvanced = function() {
 				orig_cfgDlg_buildAdvanced && orig_cfgDlg_buildAdvanced.apply(this, arguments);
-				var page = $('#conf-content .conf-main > .tab06');
-				$('.boxottc > .bevel > :radio[value=' + jn.conf.on_tl_title_click + ']', page).prop('checked', true);
+				var box = $('#conf-content .conf-main > .tab06 .boxottc');
+				$('.comb01 > option[value="' + jn.conf.on_tl_title_click + '"]', box).prop('selected', true);
 			};
 			// 設定画面でのアクション振り分け
 			var orig_cfgDlg_action = jn.configDialog.action;
@@ -236,7 +179,7 @@
 		case "config":		// 設定画面
 			// 「高度な設定」タブに項目を追加して設定を反映
 			resetConfigCSS();
-			$('.conf-main > .tab06 > .box05').after(_rsrc.configHTML);
+			$('.conf-main > .tab06 > .box04').before(_rsrc.configHTML);
 			jn.configDialog.buildAdvanced();
 			jn.transMessage($('.conf-main > .tab06'));
 			break;
@@ -252,11 +195,8 @@
 
 	// 設定画面用 CSS を（再）設定
 	function resetConfigCSS() {
-		var lang = (jn.conf.lang == 'ja' ? 'ja' : 'en');
 		$('style.tltitleclick').remove();
-		$('head').append($(_rsrc.configCSS.format(
-			_rsrc.configCSSdepLang[lang].boxHeight,
-			_rsrc.configCSSdepLang[lang].bevelTop)));
+		$('head').append($(_rsrc.configCSS));
 	}
 
 	// メッセージの翻訳データを追加 (@ginlime)
