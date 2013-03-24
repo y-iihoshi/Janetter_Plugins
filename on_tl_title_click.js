@@ -17,10 +17,10 @@
 		'author' : {
 			'en' : '@iihoshi'
 		},
-		'version' : '1.0.1',
+		'version' : '1.1.0',
 		'file' : 'on_tl_title_click.js',
 		'language' : ['en','ja'],
-		'last_update' : '2013/3/23',
+		'last_update' : '2013/3/24',
 		'update_timezone' : '9',
 		'jnVersion' : 'Win 4.2.2.0 -, Mac 4.0.1 -',
 		'description' : {
@@ -39,6 +39,10 @@
 		'msg': {
 			'en': {
 				'ottcMenu': "When you click the timeline title:",
+				'ottcLeft': "Left click:",
+				'ottcMiddle': "Middle click:",
+				'ottcDouble': "Left double-click:",
+				'ottcTimeout': "Double-click timeout:",
 				'ottcNone': "Do nothing",
 				'ottcLast': "Jump to Last Tweet",
 				'ottcLatest': "Jump to Latest Tweet",
@@ -50,6 +54,10 @@
 			},
 			'ja': {
 				'ottcMenu': "タイムラインタイトルをクリックしたときの動作:",
+				'ottcLeft': "左クリック:",
+				'ottcMiddle': "中クリック:",
+				'ottcDouble': "左ダブルクリック:",
+				'ottcTimeout': "ダブルクリック判定時間:",
 				'ottcNone': "何もしない",
 				'ottcLast': "取得済み最新ツイートへ移動",
 				'ottcLatest': "最新のツイートへ移動",
@@ -64,12 +72,30 @@
 		'configHTML': '\
 <div class="boxottc">\
 <span class="conf-menu" transtext="ottcMenu"></span>\
-<select class="comb01" action="on_tl_title_click" size="1">\
+<span class="menu01" transtext="ottcLeft"></span>\
+<select class="comb-left" action="on_tl_title_click" size="1">\
 <option value="none" transtext="ottcNone" transtitle="ottcNoneTip"></option>\
 <option value="last" transtext="ottcLast" transtitle="ottcLastTip"></option>\
 <option value="latest" transtext="ottcLatest" transtitle="ottcLatestTip"></option>\
 <option value="unread" transtext="ottcUnread" transtitle="ottcUnreadTip"></option>\
 </select>\
+<span class="menu02" transtext="ottcMiddle"></span>\
+<select class="comb-middle" action="on_tl_title_midclick" size="1">\
+<option value="none" transtext="ottcNone" transtitle="ottcNoneTip"></option>\
+<option value="last" transtext="ottcLast" transtitle="ottcLastTip"></option>\
+<option value="latest" transtext="ottcLatest" transtitle="ottcLatestTip"></option>\
+<option value="unread" transtext="ottcUnread" transtitle="ottcUnreadTip"></option>\
+</select>\
+<span class="menu03" transtext="ottcDouble"></span>\
+<select class="comb-double" action="on_tl_title_dblclick" size="1">\
+<option value="none" transtext="ottcNone" transtitle="ottcNoneTip"></option>\
+<option value="last" transtext="ottcLast" transtitle="ottcLastTip"></option>\
+<option value="latest" transtext="ottcLatest" transtitle="ottcLatestTip"></option>\
+<option value="unread" transtext="ottcUnread" transtitle="ottcUnreadTip"></option>\
+</select>\
+<span class="menu04" transtext="ottcTimeout"></span>\
+<input class="edit-timeout" type="text" action="on_tl_title_dblclick_timeout">\
+<span class="menu04 unit">ms</span>\
 </div>\
 <hr>\
 ',
@@ -78,7 +104,36 @@
 <style type="text/css" class="tltitleclick">\
 <!--\
 .conf-main > .tab06 > .boxottc {\
-	height: 54px;\
+	height: 144px;\
+}\
+.conf-main > .tab06 > .boxottc > .comb-left {\
+	position: absolute;\
+	top: 30px;\
+	left: 200px;\
+	width: 200px;\
+}\
+.conf-main > .tab06 > .boxottc > .comb-middle {\
+	position: absolute;\
+	top: 60px;\
+	left: 200px;\
+	width: 200px;\
+}\
+.conf-main > .tab06 > .boxottc > .comb-double {\
+	position: absolute;\
+	top: 90px;\
+	left: 200px;\
+	width: 200px;\
+}\
+.conf-main > .tab06 > .boxottc > .edit-timeout {\
+	position: absolute;\
+	top: 126px;\
+	left: 200px;\
+	width: 90px;\
+	padding: 0 5px;\
+	text-align: right;\
+}\
+.conf-main > .tab06 > .boxottc > .menu04.unit {\
+	left: 306px;\
 }\
 //-->\
 </style>\
@@ -111,8 +166,23 @@
 			jn.configDialog.buildAdvanced = function() {
 				orig_cfgDlg_buildAdvanced && orig_cfgDlg_buildAdvanced.apply(this, arguments);
 				var box = $('#conf-content .conf-main > .tab06 .boxottc');
-				$('.comb01 > option[value="' + jn.conf.on_tl_title_click + '"]', box).prop('selected', true);
+				$('.comb-left > option[value="' + jn.conf.on_tl_title_click + '"]', box).prop('selected', true);
+				$('.comb-middle > option[value="' + jn.conf.on_tl_title_midclick + '"]', box).prop('selected', true);
+				$('.comb-double > option[value="' + jn.conf.on_tl_title_dblclick + '"]', box).prop('selected', true);
+				$('.edit-timeout', box).val(jn.conf.on_tl_title_dblclick_timeout);
 			};
+			// Mac 版では設定画面 close 時に focus が移動しないため、
+			// .edit-timeout の設定更新のトリガーが change だけでは不十分
+			if (_determinPlatform() == 'Mac') {
+				// Advanced 設定保存
+				var orig_cfgDlg_saveAdvanced = jn.configDialog.saveAdvanced;
+				jn.configDialog.saveAdvanced = function() {
+					// ここでは syncConfig() 実行禁止
+					var box = $('#conf-content .conf-main > .tab06 .boxottc');
+					jn.conf.on_tl_title_dblclick_timeout = $('.edit-timeout', box).val();
+					orig_cfgDlg_saveAdvanced && orig_cfgDlg_saveAdvanced.apply(this, arguments);
+				};
+			}
 			// 設定画面でのアクション振り分け
 			var orig_cfgDlg_action = jn.configDialog.action;
 			jn.configDialog.action = function(act, elem, event) {
@@ -121,11 +191,11 @@
 					return;
 				switch (act) {
 				case 'on_tl_title_click':
-					jn.conf.on_tl_title_click = elem.val();
-					syncConfig({
-						configName: 'on_tl_title_click',
-						configData: jn.conf.on_tl_title_click
-					});
+				case 'on_tl_title_midclick':
+				case 'on_tl_title_dblclick':
+				case 'on_tl_title_dblclick_timeout':
+					jn.conf[act] = elem.val();
+					syncConfig({configName: act, configData: jn.conf[act]});
 					break;
 				default:
 					orig_cfgDlg_action && orig_cfgDlg_action.apply(this, arguments);
@@ -147,32 +217,38 @@
 		// 本プラグインの設定値が無ければ初期化
 		if (jn.conf) {
 			if (jn.conf.on_tl_title_click == undefined)
-				jn.conf.on_tl_title_click = 'none';
+				jn.conf.on_tl_title_click = 'last';
+			if (jn.conf.on_tl_title_midclick == undefined)
+				jn.conf.on_tl_title_midclick = 'unread';
+			if (jn.conf.on_tl_title_dblclick == undefined)
+				jn.conf.on_tl_title_dblclick = 'latest';
+			if (jn.conf.on_tl_title_dblclick_timeout == undefined)
+				jn.conf.on_tl_title_dblclick_timeout = 200;
 		}
 
 		// ウィンドウ別の初期化処理
 		switch (_Janetter_Window_Type) {
 		case "main":		// メイン画面
-			$('#timeline-view .timeline-title-text').on('click', function(e) {
-				// 修飾キー押下無しの左クリックでのみ発火
-				// jQuery API Doc. には metaKey しか記載が無いけど...
-				if (!(e.metaKey || e.shiftKey || e.ctrlKey || e.altKey) && (e.which == 1)) {
-					var timeline = $(this).closest('li.timeline-container');
-					switch (jn.conf.on_tl_title_click) {
-					case 'last':
-						timeline.get(0).controller.scroll.toLatest();
-						break;
-					case 'latest':
-					case 'unread':
-						var action = 'jump' + jn.conf.on_tl_title_click;
-						jn.action({act: action, element: timeline});
-						break;
-					case 'none':
-					default:
-						// Do nothing
-						break;
-					}
-				}
+			$('#timeline-view .timeline-title-text').single_double_click(function(e) {
+				// 修飾キー押下無しの左/中クリックでのみ発火
+				if (!isModKeyPressed(e) && (e.which == 1 || e.which == 2))
+					jumpTo({
+						target: (e.which == 1
+							? jn.conf.on_tl_title_click
+							: jn.conf.on_tl_title_midclick),
+						timeline: $(this).closest('li.timeline-container'),
+						event: e
+					});
+			}, function(e) {
+				// 修飾キー押下無しの左ダブルクリックでのみ発火
+				if (!isModKeyPressed(e) && (e.which == 1))
+					jumpTo({
+						target: jn.conf.on_tl_title_dblclick,
+						timeline: $(this).closest('li.timeline-container'),
+						event: e
+					});
+			}, function() {
+				return jn.conf.on_tl_title_dblclick_timeout;
 			});
 			break;
 
@@ -182,6 +258,13 @@
 			$('.conf-main > .tab06 > .box04').before(_rsrc.configHTML);
 			jn.configDialog.buildAdvanced();
 			jn.transMessage($('.conf-main > .tab06'));
+			// テキストボックスの click ではなく change で action 発動
+			$('.conf-main > .tab06 > .boxottc > .edit-timeout')
+			.click(false)
+			.change(function(e) {
+				var elem = $(e.srcElement);
+				jn.configDialog.action(elem.attr('action'), elem, e);
+			});
 			break;
 
 		case "profile":		// プロフィール画面
@@ -193,10 +276,67 @@
 		console.log('on_tl_title_click.js has been initialized.');
 	}
 
+	// 修飾キーが 1 つ以上押下されているか
+	function isModKeyPressed(event) {
+		// jQuery API Documentation には metaKey しか記載が無いけど...
+		return (event.metaKey || event.shiftKey || event.ctrlKey || event.altKey);
+	}
+
+	// options.timeline の options.target へ移動
+	function jumpTo(options) {
+		var timeline = options.timeline,
+			target = options.target,
+			event = options.event;
+		switch (target) {
+		case 'last':
+			timeline.get(0).controller.scroll.toLatest();
+			break;
+		case 'latest':
+		case 'unread':
+			jn.action({act: ('jump' + target), element: timeline, event: event});
+			break;
+		case 'none':
+		default:
+			// Do nothing
+			break;
+		}
+	}
+
 	// 設定画面用 CSS を（再）設定
 	function resetConfigCSS() {
 		$('style.tltitleclick').remove();
 		$('head').append($(_rsrc.configCSS));
+	}
+
+	// Author: Jacek Becela
+	// Source: http://gist.github.com/399624
+	// License: MIT
+	// Modified by @iihoshi
+	//   変数名 jQuery を $ に置換
+	//   第 3 引数を callback 関数化 ... ハンドラ再登録無しで Timeout 値を変更可にするため
+	$.fn.single_double_click = function(single_click_callback, double_click_callback, timeout_callback) {
+		return this.each(function(){
+			var clicks = 0, self = this;
+			$(this).click(function(event){
+				clicks++;
+				if (clicks == 1) {
+					setTimeout(function(){
+						if(clicks == 1) {
+							single_click_callback.call(self, event);
+						} else {
+							double_click_callback.call(self, event);
+						}
+						clicks = 0;
+					}, timeout_callback.call(self));
+				}
+			});
+		});
+	};
+
+	// プラットフォームの判定 (@ginlime)
+	function _determinPlatform(){
+			return (navigator.userAgent.indexOf('Windows')>=0) ? 'Win' :
+					(navigator.userAgent.indexOf('Macintosh')>=0) ? 'Mac' : 'other';
 	}
 
 	// メッセージの翻訳データを追加 (@ginlime)
@@ -206,7 +346,7 @@
 			msgData = msg['en'];
 		additionalProc && additionalProc(msgData);
 		assignTo(jn.msg, msgData);
-	}
+	};
 
 	// 全置換 (@ginlime)
 	String.prototype.replaceAll = function(org, dest){
