@@ -12,20 +12,20 @@
 	jn.pluginInfo['on_tl_title_click'] = {
 		'name' : {
 			'ja' : 'タイムラインタイトルクリック時の動作を追加',
-			'en' : 'Add the action triggered by clicking on a timeline title'
+			'en' : 'Add some click actions to a timeline title'
 		},
 		'author' : {
 			'en' : '@iihoshi'
 		},
-		'version' : '1.1.0',
+		'version' : '1.1.1',
 		'file' : 'on_tl_title_click.js',
 		'language' : ['en','ja'],
-		'last_update' : '2013/3/24',
+		'last_update' : '2013/4/6',
 		'update_timezone' : '9',
 		'jnVersion' : 'Win 4.2.2.0 -, Mac 4.0.1 -',
 		'description' : {
 			'ja' : 'タイムラインのタイトルをクリックした時の動作を設定できます。',
-			'en' : 'You can configure the action triggered by clicking on a timeline title.'
+			'en' : 'You can configure the actions triggered by clicking on a timeline title.'
 		},
 		'updateinfo' : 'http://www.colorless-sight.jp/archives/JanetterPluginUpdateInfo.txt'
 	};
@@ -101,7 +101,7 @@
 ',
 		// 設定画面用の CSS
 		'configCSS': '\
-<style type="text/css" class="tltitleclick">\
+<style type="text/css" class="ottc">\
 <!--\
 .conf-main > .tab06 > .boxottc {\
 	height: 144px;\
@@ -160,6 +160,15 @@
 
 		// ウィンドウ別の初期化処理
 		switch (_Janetter_Window_Type) {
+		case "main":		// メイン画面
+			// タイムライン追加
+			var orig_addTimeline = jn.addTimeline;
+			jn.addTimeline = function(tltype, api, juid, active, addTL, options, initflg, use_stream, key) {
+				orig_addTimeline.apply(this, arguments);
+				registerClickHandler();
+			};
+			break;
+
 		case "config":		// 設定画面
 			// Advanced ページ作成
 			var orig_cfgDlg_buildAdvanced = jn.configDialog.buildAdvanced;
@@ -204,7 +213,6 @@
 			};
 			break;
 
-		case "main":		// メイン画面
 		case "profile":		// プロフィール画面
 		case "notice":		// 通知ポップアップ画面
 		default:
@@ -229,27 +237,9 @@
 		// ウィンドウ別の初期化処理
 		switch (_Janetter_Window_Type) {
 		case "main":		// メイン画面
-			$('#timeline-view .timeline-title-text').single_double_click(function(e) {
-				// 修飾キー押下無しの左/中クリックでのみ発火
-				if (!isModKeyPressed(e) && (e.which == 1 || e.which == 2))
-					jumpTo({
-						target: (e.which == 1
-							? jn.conf.on_tl_title_click
-							: jn.conf.on_tl_title_midclick),
-						timeline: $(this).closest('li.timeline-container'),
-						event: e
-					});
-			}, function(e) {
-				// 修飾キー押下無しの左ダブルクリックでのみ発火
-				if (!isModKeyPressed(e) && (e.which == 1))
-					jumpTo({
-						target: jn.conf.on_tl_title_dblclick,
-						timeline: $(this).closest('li.timeline-container'),
-						event: e
-					});
-			}, function() {
-				return jn.conf.on_tl_title_dblclick_timeout;
-			});
+			// Mac 版では起動直後の jn.addTimeline がプラグイン読み込み前に終わっている
+			if (_determinPlatform() == 'Mac')
+				registerClickHandler();
 			break;
 
 		case "config":		// 設定画面
@@ -276,9 +266,31 @@
 		console.log('on_tl_title_click.js has been initialized.');
 	}
 
+	// タイムラインタイトルクリック時のハンドラを（再）登録
+	function registerClickHandler() {
+		$('#timeline-view .timeline-title-text').single_double_click(function(e) {
+			// 修飾キー押下無しの左/中クリックでのみ発火
+			if (!isModKeyPressed(e) && (e.which == 1 || e.which == 2))
+				jumpTo({
+					target: (e.which == 1 ? jn.conf.on_tl_title_click : jn.conf.on_tl_title_midclick),
+					timeline: $(this).closest('li.timeline-container'),
+					event: e
+				});
+		}, function(e) {
+			// 修飾キー押下無しの左ダブルクリックでのみ発火
+			if (!isModKeyPressed(e) && (e.which == 1))
+				jumpTo({
+					target: jn.conf.on_tl_title_dblclick,
+					timeline: $(this).closest('li.timeline-container'),
+					event: e
+				});
+		}, function() {
+			return jn.conf.on_tl_title_dblclick_timeout;
+		});
+	}
+
 	// 修飾キーが 1 つ以上押下されているか
 	function isModKeyPressed(event) {
-		// jQuery API Documentation には metaKey しか記載が無いけど...
 		return (event.metaKey || event.shiftKey || event.ctrlKey || event.altKey);
 	}
 
@@ -304,7 +316,7 @@
 
 	// 設定画面用 CSS を（再）設定
 	function resetConfigCSS() {
-		$('style.tltitleclick').remove();
+		$('style.ottc').remove();
 		$('head').append($(_rsrc.configCSS));
 	}
 
@@ -313,11 +325,13 @@
 	// License: MIT
 	// Modified by @iihoshi
 	//   変数名 jQuery を $ に置換
-	//   第 3 引数を callback 関数化 ... ハンドラ再登録無しで Timeout 値を変更可にするため
-	$.fn.single_double_click = function(single_click_callback, double_click_callback, timeout_callback) {
+	//   引数 timeout に callback 関数を渡せるように変更
+	//     ... ハンドラ再登録無しで Timeout 値を変更可にするため
+	//   ハンドラの多重登録を回避
+	$.fn.single_double_click = function(single_click_callback, double_click_callback, timeout) {
 		return this.each(function(){
 			var clicks = 0, self = this;
-			$(this).click(function(event){
+			$(this).off('click.ottc').on('click.ottc', function(event) {
 				clicks++;
 				if (clicks == 1) {
 					setTimeout(function(){
@@ -327,7 +341,7 @@
 							double_click_callback.call(self, event);
 						}
 						clicks = 0;
-					}, timeout_callback.call(self));
+					}, (typeof timeout === 'function') ? timeout.call(self) : timeout);
 				}
 			});
 		});
@@ -335,8 +349,8 @@
 
 	// プラットフォームの判定 (@ginlime)
 	function _determinPlatform(){
-			return (navigator.userAgent.indexOf('Windows')>=0) ? 'Win' :
-					(navigator.userAgent.indexOf('Macintosh')>=0) ? 'Mac' : 'other';
+		return (navigator.userAgent.indexOf('Windows')>=0) ? 'Win' :
+				(navigator.userAgent.indexOf('Macintosh')>=0) ? 'Mac' : 'other';
 	}
 
 	// メッセージの翻訳データを追加 (@ginlime)
@@ -490,8 +504,7 @@
 	if (jn.temp.initialized) {
 		// The original onInitializeDone() has already been called!
 		initOnInitialized();
-	}
-	else {
+	} else {
 		var orig_onInitializeDone = jn.onInitializeDone;
 		jn.onInitializeDone = function() {
 			orig_onInitializeDone && orig_onInitializeDone.apply(this, arguments);
