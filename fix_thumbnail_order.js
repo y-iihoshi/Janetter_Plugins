@@ -20,7 +20,7 @@
 		'author' : {
 			'en' : '@iihoshi'
 		},
-		'version' : '1.0.0',
+		'version' : '1.0.1',
 		'file' : my_filename,
 		'language' : ['en', 'ja'],
 		'last_update' : "2015/4/23",
@@ -41,16 +41,30 @@
 	// 本プラグインの初期化処理（onInitializeDone 時）
 	function initOnInitialized() {
 		var orig_janetterThumbnail = $.fn.janetterThumbnail.toString();
+		var re_new_image = /^(\s*)(var new_image = new Image\(\);)$/m;
+		var re_tweetThumb_append = /^(\s*)_tweetThumb\.append\($/m;
+		var re_tweetThumb_addClass = /^(\s*)\)\.(addClass\('disp'\));$/m;
 
-		var mod = orig_janetterThumbnail
-			.replace(/^(\s*)(var new_image = new Image\(\);)$/m,
-			         "$1_tweetThumb.append($$('<span/>').text(thumb_url).css({ display: 'none' }));  // inserted by " + my_filename + "\n$1$2")
-			.replace(/^(\s*)_tweetThumb\.append\($/m,
-			         "$1_tweetThumb.children('span:contains(\"' + thumb_url + '\")').replaceWith(  // replaced by " + my_filename)
-			.replace(/^(\s*)\)\.(addClass\('disp'\));$/m,
-			         "$1);  _tweetThumb.$2;  // replaced by " + my_filename)
-		//console.log(mod);
-		eval('$.fn.janetterThumbnail = ' + mod);
+		if (re_new_image.test(orig_janetterThumbnail) &&
+		    re_tweetThumb_append.test(orig_janetterThumbnail) &&
+		    re_tweetThumb_addClass.test(orig_janetterThumbnail)) {
+			var replaced = orig_janetterThumbnail
+				.replace(re_new_image,
+				         "$1_tweetThumb.append($$('<span/>').text(thumb_url).css({ display: 'none' }));  // inserted by " + my_filename + "\n$1$2")
+				.replace(re_tweetThumb_append,
+				         "$1_tweetThumb.children('span:contains(\"' + thumb_url + '\")').replaceWith(  // replaced by " + my_filename)
+				.replace(re_tweetThumb_addClass,
+				         "$1);  _tweetThumb.$2;  // replaced by " + my_filename)
+			//console.log(replaced);
+			eval('$.fn.janetterThumbnail = ' + replaced);
+		} else {
+			new jn.msgdialog({
+				title: my_filename,
+				icon: '',
+				message: 'Sorry, ' + my_filename+ ' cannot be installed.',
+				buttons: [ janet.msg.ok ],
+			});
+		}
 
 		console.log(my_filename + ' has been initialized.');
 	}
