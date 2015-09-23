@@ -9,7 +9,7 @@
 
 	// プラグイン情報 ここから
 	// プラグイン情報の初期化
-	if(!jn.pluginInfo)
+	if (!jn.pluginInfo)
 		jn.pluginInfo = {};
 	// プラグイン情報本体
 	jn.pluginInfo[my_filename.split('.')[0]] = {
@@ -20,10 +20,10 @@
 		'author' : {
 			'en' : '@iihoshi'
 		},
-		'version' : '1.0.0',
+		'version' : '1.0.1',
 		'file' : my_filename,
 		'language' : ['en', 'ja'],
-		'last_update' : "2015/9/23",
+		'last_update' : "2015/9/24",
 		'update_timezone' : '9',
 		'jnVersion' : '4.3.1.0',
 		'description' : {
@@ -38,28 +38,21 @@
 		return;
 	}
 
-	// 本プラグインの初期化処理（onInitializeDone 時）
-	function initOnInitialized() {
+	function initForThumbnail() {
 		var orig_janetterThumbnail = $.fn.janetterThumbnail.toString();
-		var re_tweetThumb = /^(\s*_tweetThumb) = _content.siblings\('div\.tweet-thumb'\);$/m;
-		var re_content_find = /^(.*)_content\.find\('div\.tweet-body/gm;
+		var re_siblings = /_content\.siblings\('div\.tweet-thumb'\);$/m;
+		var re_find = /_content\.find\('div\.tweet-body /gm;
 
-		if (re_tweetThumb.test(orig_janetterThumbnail) &&
-			re_content_find.test(orig_janetterThumbnail)){
-			var replaced = orig_janetterThumbnail
-				.replace(re_tweetThumb, "$1 = _content.children('div.tweet-thumb')")
-				.replace(re_content_find, "$1_content.find('div.tweet-reply-body");
-			// console.log(replaced);
-			eval('$.fn.janetterThumbnailForReply = ' + replaced);
-		} else {
-			new jn.msgdialog({
-				title: my_filename,
-				icon: '',
-				message: 'Sorry, ' + my_filename+ ' cannot be installed.',
-				buttons: [ janet.msg.ok ],
-			});
-			return;
+		if (!re_siblings.test(orig_janetterThumbnail) ||
+			!re_find.test(orig_janetterThumbnail)) {
+			return false;
 		}
+
+		var replaced = orig_janetterThumbnail
+			.replace(re_siblings, "_content.children('div.tweet-thumb');")
+			.replace(re_find, "_content.find('div.tweet-reply-body ");
+		// console.log(replaced);
+		eval('$.fn.janetterThumbnailForReply = ' + replaced);
 
 		var tnMouseOverHandler = function () {
 			var $this = $(this),
@@ -70,52 +63,63 @@
 			}
 		};
 
-		$.fn.janetterThumbnailForReplyEventSet = function() {
+		$.fn.janetterThumbnailForReplyEventSet = function () {
 			this.bind('mouseover', tnMouseOverHandler);
 			return this;
 		};
 
-		var expandUrl = function (a) {
-			jn.expandurl({
-				url: a.attr('expanded') || a.attr('href'),
-				done: function (success, url) {
-					if (success)
-						a.attr('expanded', url).attr('title', url.decodeURI());
-					var tweet_content = a.parents('div.tweet-content:first');
-					if ((tweet_content.length > 0) &&
-						!a.prop('thumnailed') &&
-						tweet_content.janetterThumbnail)
-						tweet_content.janetterThumbnail(url.htmlEncode(true), true);
+		return true;
+	}
 
-					var tweet_reply = a.parents('div.tweet-reply:first');
-					if ((tweet_reply.length > 0) &&
-						!a.prop('thumnailed') &&
-						tweet_reply.janetterThumbnailForReply)
-						tweet_reply.janetterThumbnailForReply(url.htmlEncode(true), true);
+	function initForExpandUrl() {
+		var orig_jn_expandUrl = jn.expandUrl.toString();
+		var re_tweet_content = /div\.tweet-content:first/m;
+		var re_janetterThumbnail = /\.janetterThumbnail(\W)/gm;
 
-					a.trigger('mouseover');
-				}
-			});
+		if (!re_tweet_content.test(orig_jn_expandUrl) ||
+			!re_janetterThumbnail.test(orig_jn_expandUrl)) {
+			return false;
 		}
 
-		var euMouseOverHandler = function(){
+		var replaced = orig_jn_expandUrl
+			.replace(re_tweet_content, 'div.tweet-reply:first')
+			.replace(re_janetterThumbnail, '.janetterThumbnailForReply$1');
+		// console.log(replaced);
+		eval('var expandUrl = ' + replaced);
+
+		var euMouseOverHandler = function () {
 			var $this = $(this);
 			$this.unbind('mouseover', euMouseOverHandler);
 			expandUrl($this);
 		}
 
-		$.fn.janetterExpandUrlEventSet = function(){
+		$.fn.janetterExpandUrlForReplyEventSet = function () {
 			this.bind('mouseover', euMouseOverHandler);
 			return this;
 		}
 
+		return true;
+	}
+
+	// 本プラグインの初期化処理（onInitializeDone 時）
+	function initOnInitialized() {
+		if (!initForThumbnail() || !initForExpandUrl()) {
+			new jn.msgdialog({
+				title: my_filename,
+				icon: '',
+				message: 'Sorry, ' + my_filename+ ' cannot be installed.',
+				buttons: [ janet.msg.ok ],
+			});
+			return;
+		}
+
 		var orig_generateReply = jn.generateReply;
-		jn.generateReply = function(item, is_default) {
+		jn.generateReply = function (item, is_default) {
 			var reply = orig_generateReply(item, is_default);
 			reply.append('<div class="tweet-thumb"/>');
 
-			var a = reply.find('.tweet-reply-body > p.text').replaceReadline().children('a.link');
-			a.janetterExpandUrlEventSet();
+			var a = reply.find('.tweet-reply-body > p.text').children('a.link');
+			a.janetterExpandUrlForReplyEventSet();
 			if (jn.conf.disp_thumbnail == 'over')
 				a.janetterThumbnailForReplyEventSet();
 			else
@@ -132,7 +136,7 @@
 		initOnInitialized();
 	} else {
 		var orig_onInitializeDone = jn.onInitializeDone;
-		jn.onInitializeDone = function() {
+		jn.onInitializeDone = function () {
 			orig_onInitializeDone && orig_onInitializeDone.apply(this, arguments);
 			initOnInitialized();
 		};
