@@ -13,7 +13,7 @@
 		if (re_instagram_exp.test(orig_janetterThumbnail)) {
 			var replaced = orig_janetterThumbnail
 				.replace(re_instagram_exp,
-				         "$1(?:www\.)$2  // replaced by " + my_filename)
+				         "$1(?:www\.)$2  // replaced by " + my_filename);
 			// console.log(replaced);
 			eval('$.fn.janetterThumbnail = ' + replaced);
 		} else {
