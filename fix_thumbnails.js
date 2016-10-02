@@ -1,6 +1,6 @@
 (function ($, jn) {
 
-	var my_filename = 'fix_instagram.js';
+	var my_filename = 'fix_thumbnails.js';
 
 	if ((_Janetter_Window_Type != "main") && (_Janetter_Window_Type != "profile"))
 		return;
