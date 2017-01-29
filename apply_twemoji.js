@@ -40,7 +40,7 @@
 	// See: http://api.jquery.com/jQuery.getScript/#entry-examples
 	$.cachedScript = function(url, options) {
 		options = $.extend( options || {}, {
-			dataType: "script",
+			dataType: 'script',
 			cache: true,
 			url: url
 		});
@@ -49,8 +49,9 @@
 
 	$.fn.extend({
 		applyTwemoji: function() {
-			twemoji.parse(this[0]);
-			this.find("img.emoji").css({
+			this.each(function() {
+				twemoji.parse(this);
+			}).find('img.emoji').css({
 				float: 'none',
 				height: '1em',
 				width: '1em',
@@ -62,6 +63,9 @@
 	});
 
 	function setup() {
+		if (_Janetter_Window_Type == "main")
+			jn.get$Timelines().applyTwemoji();
+
 		var generate = jn.tweetController.prototype.generate;
 		jn.tweetController.prototype.generate = function(conversation) {
 			return generate.apply(this, arguments).applyTwemoji();
@@ -73,12 +77,12 @@
 		};
 	}
 
-	$.cachedScript("https://twemoji.maxcdn.com/2/twemoji.min.js?2.2.3").then(
-		function(script, textStatus, jqxhr) {
+	$.cachedScript("https://twemoji.maxcdn.com/2/twemoji.min.js?2.2.3")
+		.done(function(script, textStatus, jqxhr) {
 			console.log(my_filename + ": " + textStatus);
 			setup();
-		},
-		function(jqxhr, textStatus, errorThrown) {
+		})
+		.fail(function(jqxhr, textStatus, errorThrown) {
 			console.log(my_filename + ": " + errorThrown);
 		});
 
