@@ -24,10 +24,10 @@
 			ja: '@iihoshi',
 			en: '@iihoshi'
 		},
-		version: '1.0.0',
+		version: '1.0.1',
 		file: my_filename,
 		language: ['en', 'ja'],
-		last_update: "2017/2/11",
+		last_update: "2017/2/17",
 		update_timezone: '9',
 		jnVersion: '4.3.1.0',
 		description: {
@@ -49,7 +49,7 @@
 				var $this = $(this);
 				var expanded = $this.attr('expanded');
 				if (expanded && $this.text().truncated())
-					$this.text(expanded);
+					$this.text(expanded.decodeURI());
 			});
 		}
 	});
