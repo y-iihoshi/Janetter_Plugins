@@ -20,10 +20,10 @@
 		'author' : {
 			'en' : '@iihoshi'
 		},
-		'version' : '1.0.0',
+		'version' : '1.0.1',
 		'file' : my_filename,
 		'language' : ['en', 'ja'],
-		'last_update' : "2017/1/29",
+		'last_update' : "2017/2/25",
 		'update_timezone' : '9',
 		'jnVersion' : '4.3.1.0',
 		'description' : {
