@@ -55,8 +55,8 @@
 				float: 'none',
 				height: '1em',
 				width: '1em',
-				margin: '0 .05em 0 .1em',
-				verticalAlign: '-0.1em'
+				margin: '0 .1em',
+				verticalAlign: 'baseline'
 			});
 			return this;
 		}
