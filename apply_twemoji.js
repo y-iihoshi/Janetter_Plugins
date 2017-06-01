@@ -5,6 +5,9 @@
 
 (function ($, jn) {
 
+	if ((_Janetter_Window_Type != "main") && (_Janetter_Window_Type != "profile"))
+		return;
+
 	var my_filename = 'apply_twemoji.js';
 
 	// プラグイン情報 ここから
@@ -20,12 +23,12 @@
 		'author' : {
 			'en' : '@iihoshi'
 		},
-		'version' : '1.0.1',
+		'version' : '1.1.0',
 		'file' : my_filename,
 		'language' : ['en', 'ja'],
-		'last_update' : "2017/2/25",
+		'last_update' : "2017/6/2",
 		'update_timezone' : '9',
-		'jnVersion' : '4.3.1.0',
+		'jnVersion' : '4.4.0.0',
 		'description' : {
 			'ja' : 'twemoji を利用して絵文字を画像で表示します。',
 			'en' : 'Shows emojis as images by using twemoji.'
@@ -33,9 +36,6 @@
 		'updateinfo' : 'http://www.colorless-sight.jp/archives/JanetterPluginUpdateInfo.txt'
 	};
 	// プラグイン情報ここまで
-
-	if ((_Janetter_Window_Type != "main") && (_Janetter_Window_Type != "profile"))
-		return;
 
 	// See: http://api.jquery.com/jQuery.getScript/#entry-examples
 	$.cachedScript = function(url, options) {
@@ -77,7 +77,7 @@
 		};
 	}
 
-	$.cachedScript("https://twemoji.maxcdn.com/2/twemoji.min.js?2.2.3")
+	$.cachedScript("https://twemoji.maxcdn.com/2/twemoji.min.js?2.3.0")
 		.done(function(script, textStatus, jqxhr) {
 			console.log(my_filename + ": " + textStatus);
 			setup();
