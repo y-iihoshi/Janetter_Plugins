@@ -23,17 +23,17 @@
 		'author' : {
 			'en' : '@iihoshi'
 		},
-		'version' : '1.1.0',
+		'version' : '1.2.0',
 		'file' : my_filename,
 		'language' : ['en', 'ja'],
-		'last_update' : "2017/6/2",
+		'last_update' : "2018/5/28",
 		'update_timezone' : '9',
 		'jnVersion' : '4.4.0.0',
 		'description' : {
 			'ja' : 'twemoji を利用して絵文字を画像で表示します。',
 			'en' : 'Shows emojis as images by using twemoji.'
 		},
-		'updateinfo' : 'http://www.colorless-sight.jp/archives/JanetterPluginUpdateInfo.txt'
+		'updateinfo' : 'https://www.colorless-sight.jp/archives/JanetterPluginUpdateInfo.txt'
 	};
 	// プラグイン情報ここまで
 
@@ -63,8 +63,12 @@
 	});
 
 	function setup() {
-		if (_Janetter_Window_Type == "main")
+		if (_Janetter_Window_Type == "main") {
 			jn.get$Timelines().applyTwemoji();
+		} else if (_Janetter_Window_Type == "profile") {
+			$('#user-info > .username').applyTwemoji();
+			$('#content > .tab01 > .prof-content').applyTwemoji();
+		}
 
 		var generate = jn.tweetController.prototype.generate;
 		jn.tweetController.prototype.generate = function(conversation) {
@@ -77,7 +81,7 @@
 		};
 	}
 
-	$.cachedScript("https://twemoji.maxcdn.com/2/twemoji.min.js?2.3.0")
+	$.cachedScript("https://twemoji.maxcdn.com/2/twemoji.min.js?2.7")
 		.done(function(script, textStatus, jqxhr) {
 			console.log(my_filename + ": " + textStatus);
 			setup();
