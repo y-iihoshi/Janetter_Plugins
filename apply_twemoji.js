@@ -23,10 +23,10 @@
 		'author' : {
 			'en' : '@iihoshi'
 		},
-		'version' : '1.2.0',
+		'version' : '1.3.0',
 		'file' : my_filename,
 		'language' : ['en', 'ja'],
-		'last_update' : "2018/5/28",
+		'last_update' : "2018/6/10",
 		'update_timezone' : '9',
 		'jnVersion' : '4.4.0.0',
 		'description' : {
@@ -81,7 +81,7 @@
 		};
 	}
 
-	$.cachedScript("https://twemoji.maxcdn.com/2/twemoji.min.js?2.7")
+	$.cachedScript("https://twemoji.maxcdn.com/2/twemoji.min.js?11.0")
 		.done(function(script, textStatus, jqxhr) {
 			console.log(my_filename + ": " + textStatus);
 			setup();
