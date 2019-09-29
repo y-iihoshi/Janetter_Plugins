@@ -16,24 +16,30 @@
 	}
 
 	// Thanks to: http://potato.2ch.net/test/read.cgi/software/1438689601/763
+	// Thanks to: http://jbbs.shitaraba.net/bbs/read.cgi/internet/8173/1439011959/874
 	function fixPixiv() {
 		var original = this.toString();
 		var re_pixiv = /function pixiv\(permalink\){[^]*?^\t\t}$/m;
-		if (re_pixiv.test(original)) {
-			var pixiv = re_pixiv.exec(original)[0];
-			var re_pixiv_cond = /if\(link && thumb_url && title\){$/m;
-			var re_pixiv_link = /link: link\[1\]\.htmlDecode\(\),$/m;
-			if (re_pixiv_cond.test(pixiv) && re_pixiv_link.test(pixiv)) {
-				var replaced_pixiv = pixiv 
-					.replace(re_pixiv_cond, "if(thumb_url && title){" + comment)
-					.replace(re_pixiv_link, "link: url," + comment);
-				return original.replace(re_pixiv, replaced_pixiv);
-			} else {
-				return original;
-			}
-		} else {
+		if (!re_pixiv.test(original))
 			return original;
-		}
+
+		var pixiv = re_pixiv.exec(original)[0];
+		var re_pixiv_exp = /^(.+var exp = )\/.+\/ig,$/m;
+		var re_pixiv_exp2 = /^(.+var exp2 = )\/.+\/ig;$/m;
+		var re_pixiv_cond = /if\(link && thumb_url && title\){$/m;
+		var re_pixiv_link = /link: link\[1\]\.htmlDecode\(\),$/m;
+		if (!re_pixiv_exp.test(pixiv) || !re_pixiv_exp2.test(pixiv) ||
+			!re_pixiv_cond.test(pixiv) || !re_pixiv_link.test(pixiv))
+			return original;
+
+		var replaced_pixiv = pixiv
+			.replace(re_pixiv_exp,
+				"$1/https?:\\\/\\\/www.pixiv.net\\\//ig," + comment)
+			.replace(re_pixiv_exp2,
+				"$1/(?:artworks\\\/|(\\\?|&)illust_id=)([0-9]+)/ig;" + comment)
+			.replace(re_pixiv_cond, "if(thumb_url && title){" + comment)
+			.replace(re_pixiv_link, "link: url," + comment);
+		return original.replace(re_pixiv, replaced_pixiv);
 	}
 
 	function initOnInitialized() {
@@ -42,7 +48,7 @@
 
 		var orig_janetterThumbnail = $.fn.janetterThumbnail.toString();
 		var replaced = orig_janetterThumbnail.fixInstagram().fixPixiv();
-		// console.log(replaced);
+		//console.log(replaced);
 		eval('$.fn.janetterThumbnail = ' + replaced);
 
 		delete String.prototype.fixPixiv;
