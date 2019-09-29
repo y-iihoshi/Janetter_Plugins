@@ -23,12 +23,12 @@
 		'author' : {
 			'en' : '@iihoshi'
 		},
-		'version' : '1.3.0',
+		'version' : '1.4.0',
 		'file' : my_filename,
 		'language' : ['en', 'ja'],
-		'last_update' : "2018/6/10",
+		'last_update' : "2019/9/29",
 		'update_timezone' : '9',
-		'jnVersion' : '4.4.0.0',
+		'jnVersion' : '4.5.1.0',
 		'description' : {
 			'ja' : 'twemoji を利用して絵文字を画像で表示します。',
 			'en' : 'Shows emojis as images by using twemoji.'
@@ -81,7 +81,7 @@
 		};
 	}
 
-	$.cachedScript("https://twemoji.maxcdn.com/2/twemoji.min.js?11.0")
+	$.cachedScript("https://twemoji.maxcdn.com/v/latest/twemoji.min.js")
 		.done(function(script, textStatus, jqxhr) {
 			console.log(my_filename + ": " + textStatus);
 			setup();
