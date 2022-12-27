@@ -23,10 +23,10 @@
 		'author' : {
 			'en' : '@iihoshi'
 		},
-		'version' : '1.4.0',
+		'version' : '1.5.0',
 		'file' : my_filename,
 		'language' : ['en', 'ja'],
-		'last_update' : "2019/9/29",
+		'last_update' : "2022/12/28",
 		'update_timezone' : '9',
 		'jnVersion' : '4.5.1.0',
 		'description' : {
@@ -50,7 +50,9 @@
 	$.fn.extend({
 		applyTwemoji: function() {
 			this.each(function() {
-				twemoji.parse(this);
+				twemoji.parse(this, {
+					base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/'
+				});
 			}).find('img.emoji').css({
 				float: 'none',
 				height: '1em',
@@ -81,7 +83,7 @@
 		};
 	}
 
-	$.cachedScript("https://twemoji.maxcdn.com/v/latest/twemoji.min.js")
+	$.cachedScript("https://cdn.jsdelivr.net/npm/twemoji@latest/dist/twemoji.min.js")
 		.done(function(script, textStatus, jqxhr) {
 			console.log(my_filename + ": " + textStatus);
 			setup();
